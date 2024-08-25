@@ -1,1 +1,1 @@
-# voxinsights
+# VoxInsights
