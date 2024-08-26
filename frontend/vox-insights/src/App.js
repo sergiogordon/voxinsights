@@ -22,6 +22,7 @@ function App() {
     <div className="app-container">
       <header className="app-header">
         <h1>VoxInsights</h1>
+        <p>Welcome to your custom React app!</p>
       </header>
       <main className="app-main">
         <div className="recording-controls">
