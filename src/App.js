@@ -34,7 +34,7 @@ function App() {
         socketRef.current = null;
       }
     } else {
-      socketRef.current = new WebSocket('ws://localhost:8000/ws');
+      socketRef.current = new WebSocket(`wss://${process.env.REACT_APP_EB_URL}/ws`);
       socketRef.current.onmessage = (event) => {
         const [speaker, text] = event.data.split(': ', 2);
         setTranscriptions(prev => [...prev, { speaker, text }]);

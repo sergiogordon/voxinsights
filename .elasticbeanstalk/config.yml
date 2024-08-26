@@ -1,0 +1,13 @@
+branch-defaults:
+  main:
+    environment: your-environment-name
+environment-defaults:
+  your-environment-name:
+    branch: null
+    repository: null
+global:
+  application_name: your-application-name
+  default_ec2_keyname: null
+  default_platform: Python 3.8
+  default_region: your-aws-region
+  sc: git
