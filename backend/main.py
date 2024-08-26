@@ -1,4 +1,8 @@
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sounddevice as sd
 import numpy as np
@@ -7,7 +11,6 @@ import asyncio
 import queue
 import time
 import logging
-from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,7 +20,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this in production
+    allow_origins=["http://localhost:3000"],  # Add your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,6 +107,7 @@ async def transcribe_audio(audio_queue, stop_event, websocket):
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    logger.info("WebSocket connection opened")
     
     fs = 44100  # Sample rate
     audio_queue = asyncio.Queue()
@@ -114,13 +118,20 @@ async def websocket_endpoint(websocket: WebSocket):
     transcription_task = asyncio.create_task(transcribe_audio(audio_queue, stop_event, websocket))
     
     try:
-        # Wait for the WebSocket connection to close
-        await websocket.receive_text()
+        while True:
+            message = await websocket.receive_text()
+            if message == "STOP":
+                stop_event.set()
+                break
     finally:
         # Ensure both tasks are stopped
         stop_event.set()
         await asyncio.gather(recording_task, transcription_task, return_exceptions=True)
         logger.info("WebSocket connection closed")
+
+@app.get("/")
+async def root():
+    return {"message": "VoxInsights API is running"}
 
 # @app.post("/start_recording_and_transcribing/")
 # async def start_recording_and_transcribing(request: AudioRecordingRequest):

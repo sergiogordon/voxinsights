@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Mic, MicOff } from "lucide-react"
@@ -9,10 +9,30 @@ export default function Component() {
     { speaker: "Me", text: "Hello, this is a sample transcription." },
     { speaker: "Speaker 2", text: "Great! Let's test this app." },
   ])
+  const socketRef = useRef<WebSocket | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close()
+      }
+    }
+  }, [])
 
   const toggleRecording = () => {
+    if (isRecording) {
+      if (socketRef.current) {
+        socketRef.current.close()
+        socketRef.current = null
+      }
+    } else {
+      socketRef.current = new WebSocket('ws://localhost:8000/ws')
+      socketRef.current.onmessage = (event) => {
+        const [speaker, text] = event.data.split(': ', 2)
+        setTranscriptions(prev => [...prev, { speaker, text }])
+      }
+    }
     setIsRecording(!isRecording)
-    // Here you would typically start/stop the actual recording and transcription process
   }
 
   return (
