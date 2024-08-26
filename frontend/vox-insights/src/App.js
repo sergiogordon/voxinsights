@@ -7,7 +7,8 @@ function App() {
 
   const handleStartRecording = async () => {
     try {
-      const response = await axios.post('http://localhost:8000/start_recording_and_transcribing/', { duration });
+      // Update the URL to use the Replit environment
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/start_recording_and_transcribing/`, { duration });
       setTranscription(response.data.transcriptions.join('\n')); // Assuming the response returns an array of transcriptions
     } catch (error) {
       console.error("Error starting recording:", error);
