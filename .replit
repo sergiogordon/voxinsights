@@ -8,6 +8,15 @@ REACT_APP_EB_URL = "your-elastic-beanstalk-url"
 channel = "stable-22_11"
 
 [deployment]
-run = ["sh", "-c", "npm run build"]
+run = ["sh", "-c", "npm run build && npx serve -s build"]
 deploymentTarget = "static"
 publicDir = "build"
+
+[languages]
+javascript = "nodejs"
+
+[languages.javascript]
+pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
+
+[languages.javascript.languageServer]
+start = "typescript-language-server --stdio"
