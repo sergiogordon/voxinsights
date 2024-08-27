@@ -309,12 +309,3 @@ resource "aws_apigatewayv2_stage" "websocket_stage" {
   api_id = aws_apigatewayv2_api.websocket_api.id
   name   = "prod"
 }
-
-# Outputs
-output "api_gateway_url" {
-  value = "${aws_api_gateway_deployment.voxinsights_api_deployment.invoke_url} (${var.environment})"
-}
-
-output "websocket_url" {
-  value = "${aws_apigatewayv2_stage.websocket_stage.invoke_url} (${var.environment})"
-}
