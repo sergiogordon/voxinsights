@@ -29,7 +29,7 @@ export default function App() {
         socketRef.current = null;
       }
     } else {
-      socketRef.current = new WebSocket(`wss://${process.env.NEXT_PUBLIC_EB_URL}/ws`);
+      socketRef.current = new WebSocket('wss://voxinsights-env.eba-mzv2eb6p.us-west-2.elasticbeanstalk.com/ws');
       socketRef.current.onmessage = (event) => {
         const [speaker, text] = event.data.split(': ', 2);
         setTranscriptions(prev => [...prev, { speaker, text }]);
