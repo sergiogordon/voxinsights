@@ -67,7 +67,7 @@ resource "aws_elastic_beanstalk_application" "voxinsights_app" {
 resource "aws_elastic_beanstalk_environment" "voxinsights_env" {
   name                = var.environment_name
   application         = aws_elastic_beanstalk_application.voxinsights_app.name
-  solution_stack_name = "64bit Amazon Linux 2 running Python 3.8"
+  solution_stack_name = "64bit Amazon Linux 2 v3.7.2 running Python 3.8"
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
