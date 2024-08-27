@@ -1,7 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sounddevice as sd
@@ -11,6 +11,7 @@ import asyncio
 import queue
 import time
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://your-vercel-app-url.vercel.app", "http://localhost:3000"],  # Add your Vercel app URL when you have it
+    allow_origins=[os.environ.get("FRONTEND_URL", "http://localhost:3000")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -133,32 +134,57 @@ async def websocket_endpoint(websocket: WebSocket):
 async def root():
     return {"message": "VoxInsights API is running"}
 
-# @app.post("/start_recording_and_transcribing/")
-# async def start_recording_and_transcribing(request: AudioRecordingRequest):
-#     try:
-#         fs = 44100  # Sample rate
-#         seconds = request.duration
-#         audio_queue = asyncio.Queue()
-#         stop_event = asyncio.Event()
+@app.post("/transcribe")
+async def transcribe(request: Request):
+    try:
+        audio_data = await request.body()
+        # Process the audio data and transcribe it
+        # This is a placeholder - you'll need to implement the actual transcription logic
+        result = await asyncio.to_thread(model.transcribe, audio_data)
+        return {"transcription": result["text"]}
+    except Exception as e:
+        logger.error(f"Transcription error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Transcription error: {str(e)}")
 
-#         # Start recording and transcription tasks
-#         recording_task = asyncio.create_task(record_audio(seconds, fs, audio_queue, stop_event))
-#         transcription_task = asyncio.create_task(transcribe_audio(audio_queue, stop_event))
+@app.post("/record")
+async def record(request: AudioRecordingRequest):
+    try:
+        fs = 44100  # Sample rate
+        seconds = request.duration
+        audio_queue = asyncio.Queue()
+        stop_event = asyncio.Event()
 
-#         # Wait for recording to finish or stop event to be set
-#         await asyncio.wait([recording_task, transcription_task], return_when=asyncio.FIRST_COMPLETED)
+        recording_task = asyncio.create_task(record_audio(seconds, fs, audio_queue, stop_event))
+        await recording_task
 
-#         # Ensure both tasks are stopped
-#         stop_event.set()
-#         await asyncio.gather(recording_task, transcription_task, return_exceptions=True)
+        # Process the recorded audio (e.g., save it or transcribe it)
+        # This is a placeholder - you'll need to implement the actual processing logic
+        return {"message": "Recording completed"}
+    except Exception as e:
+        logger.error(f"Recording error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Recording error: {str(e)}")
 
-#         logger.info("Recording and transcription completed")
-#         return {"message": "Recording and transcription completed"}
-#     except Exception as e:
-#         logger.error("An error occurred: %s", str(e))
-#         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+@app.get("/history")
+async def get_history():
+    # This is a placeholder - you'll need to implement the actual history retrieval logic
+    # For example, you might fetch transcription history from a database
+    return {"history": []}
+
+@app.websocket("/ws-connect")
+async def websocket_connect(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Process the received data
+            # This is a placeholder - you'll need to implement the actual WebSocket logic
+            await websocket.send_text(f"Received: {data}")
+    except Exception as e:
+        logger.error(f"WebSocket error: {str(e)}")
+    finally:
+        await websocket.close()
 
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting the FastAPI server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
