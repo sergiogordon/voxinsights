@@ -2,13 +2,20 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Add this variable at the top of the file
+variable "environment" {
+  description = "Environment name (e.g., dev, staging, prod)"
+  type        = string
+  default     = "dev"
+}
+
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
 
   tags = {
-    Name = "voxinsights-vpc"
+    Name = "voxinsights-vpc-${var.environment}"
   }
 }
 
@@ -16,7 +23,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "voxinsights-igw"
+    Name = "voxinsights-igw-${var.environment}"
   }
 }
 
@@ -27,7 +34,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "voxinsights-public-subnet"
+    Name = "voxinsights-public-subnet-${var.environment}"
   }
 }
 
@@ -37,7 +44,7 @@ resource "aws_subnet" "private" {
   availability_zone = "${var.aws_region}b"
 
   tags = {
-    Name = "voxinsights-private-subnet"
+    Name = "voxinsights-private-subnet-${var.environment}"
   }
 }
 
@@ -50,7 +57,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "voxinsights-public-rt"
+    Name = "voxinsights-public-rt-${var.environment}"
   }
 }
 
@@ -60,12 +67,12 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_elastic_beanstalk_application" "voxinsights_app" {
-  name        = var.app_name
-  description = "VoxInsights Application"
+  name        = "voxinsights-app-${var.environment}"
+  description = "VoxInsights Application - ${var.environment}"
 }
 
 resource "aws_elastic_beanstalk_environment" "voxinsights_env" {
-  name                = var.environment_name
+  name                = "voxinsights-env-${var.environment}"
   application         = aws_elastic_beanstalk_application.voxinsights_app.name
   solution_stack_name = "64bit Amazon Linux 2 v3.7.2 running Python 3.8"
 
@@ -123,27 +130,15 @@ resource "aws_elastic_beanstalk_environment" "voxinsights_env" {
     value     = "8000"
   }
 
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "API_GATEWAY_ENDPOINT"
-    value     = aws_api_gateway_deployment.voxinsights_api_deployment.invoke_url
-  }
-
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "WEBSOCKET_API_ENDPOINT"
-    value     = aws_apigatewayv2_stage.websocket_stage.invoke_url
-  }
-
   tags = {
-    Environment = var.environment_name
+    Environment = var.environment
     Project     = "VoxInsights"
   }
 }
 
 resource "aws_security_group" "eb_sg" {
-  name        = "eb-security-group"
-  description = "Security group for Elastic Beanstalk environment"
+  name        = "eb-security-group-${var.environment}"
+  description = "Security group for Elastic Beanstalk environment - ${var.environment}"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -162,14 +157,14 @@ resource "aws_security_group" "eb_sg" {
 
   tags = {
     Name        = "EB Security Group"
-    Environment = var.environment_name
+    Environment = var.environment
     Project     = "VoxInsights"
   }
 }
 
 # IAM role and instance profile
 resource "aws_iam_role" "eb_instance_role" {
-  name = "eb-ec2-role"
+  name = "eb-ec2-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -186,7 +181,7 @@ resource "aws_iam_role" "eb_instance_role" {
 }
 
 resource "aws_iam_instance_profile" "eb_instance_profile" {
-  name = "eb-ec2-instance-profile"
+  name = "eb-ec2-instance-profile-${var.environment}"
   role = aws_iam_role.eb_instance_role.name
 }
 
@@ -203,8 +198,8 @@ resource "aws_iam_role_policy_attachment" "eb_ssm_policy" {
 
 # API Gateway
 resource "aws_api_gateway_rest_api" "voxinsights_api" {
-  name        = "voxinsights-api"
-  description = "VoxInsights API Gateway"
+  name        = "voxinsights-api-${var.environment}"
+  description = "VoxInsights API Gateway - ${var.environment}"
 }
 
 resource "aws_api_gateway_resource" "transcribe" {
@@ -285,11 +280,15 @@ resource "aws_api_gateway_deployment" "voxinsights_api_deployment" {
 
   rest_api_id = aws_api_gateway_rest_api.voxinsights_api.id
   stage_name  = "prod"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # WebSocket API
 resource "aws_apigatewayv2_api" "websocket_api" {
-  name                       = "voxinsights-websocket-api"
+  name                       = "voxinsights-websocket-api-${var.environment}"
   protocol_type              = "WEBSOCKET"
   route_selection_expression = "$request.body.action"
 }
@@ -313,9 +312,9 @@ resource "aws_apigatewayv2_stage" "websocket_stage" {
 
 # Outputs
 output "api_gateway_url" {
-  value = aws_api_gateway_deployment.voxinsights_api_deployment.invoke_url
+  value = "${aws_api_gateway_deployment.voxinsights_api_deployment.invoke_url} (${var.environment})"
 }
 
 output "websocket_url" {
-  value = aws_apigatewayv2_stage.websocket_stage.invoke_url
+  value = "${aws_apigatewayv2_stage.websocket_stage.invoke_url} (${var.environment})"
 }
