@@ -145,7 +145,7 @@ resource "aws_security_group" "eb_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["${aws_api_gateway_rest_api.voxinsights_api.id}.execute-api.${var.aws_region}.amazonaws.com/32"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
