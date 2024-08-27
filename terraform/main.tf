@@ -303,9 +303,36 @@ resource "aws_apigatewayv2_integration" "connect_integration" {
   api_id           = aws_apigatewayv2_api.websocket_api.id
   integration_type = "HTTP_PROXY"
   integration_uri  = "http://${aws_elastic_beanstalk_environment.voxinsights_env.cname}/ws-connect"
+  integration_method = "POST"  # Add this line
 }
 
 resource "aws_apigatewayv2_stage" "websocket_stage" {
   api_id = aws_apigatewayv2_api.websocket_api.id
   name   = "prod"
+}
+
+resource "aws_apigatewayv2_route" "disconnect_route" {
+  api_id    = aws_apigatewayv2_api.websocket_api.id
+  route_key = "$disconnect"
+  target    = "integrations/${aws_apigatewayv2_integration.disconnect_integration.id}"
+}
+
+resource "aws_apigatewayv2_integration" "disconnect_integration" {
+  api_id               = aws_apigatewayv2_api.websocket_api.id
+  integration_type     = "HTTP_PROXY"
+  integration_uri      = "http://${aws_elastic_beanstalk_environment.voxinsights_env.cname}/ws-disconnect"
+  integration_method   = "POST"
+}
+
+resource "aws_apigatewayv2_route" "default_route" {
+  api_id    = aws_apigatewayv2_api.websocket_api.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.default_integration.id}"
+}
+
+resource "aws_apigatewayv2_integration" "default_integration" {
+  api_id               = aws_apigatewayv2_api.websocket_api.id
+  integration_type     = "HTTP_PROXY"
+  integration_uri      = "http://${aws_elastic_beanstalk_environment.voxinsights_env.cname}/ws-default"
+  integration_method   = "POST"
 }

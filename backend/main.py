@@ -173,15 +173,44 @@ async def get_history():
 @app.websocket("/ws-connect")
 async def websocket_connect(websocket: WebSocket):
     await websocket.accept()
+    logger.info("WebSocket connection opened")
     try:
         while True:
             data = await websocket.receive_text()
             # Process the received data
-            # This is a placeholder - you'll need to implement the actual WebSocket logic
-            await websocket.send_text(f"Received: {data}")
+            await websocket.send_text(f"Connected and received: {data}")
     except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}")
+        logger.error(f"WebSocket connect error: {str(e)}")
     finally:
+        logger.info("WebSocket connection closed")
+        await websocket.close()
+
+@app.websocket("/ws-disconnect")
+async def websocket_disconnect(websocket: WebSocket):
+    await websocket.accept()
+    logger.info("WebSocket disconnect route triggered")
+    try:
+        # Perform any cleanup or logging needed for disconnection
+        await websocket.send_text("Disconnecting...")
+    except Exception as e:
+        logger.error(f"WebSocket disconnect error: {str(e)}")
+    finally:
+        logger.info("WebSocket disconnected")
+        await websocket.close()
+
+@app.websocket("/ws-default")
+async def websocket_default(websocket: WebSocket):
+    await websocket.accept()
+    logger.info("WebSocket default route triggered")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Process the received data for the default route
+            await websocket.send_text(f"Default route received: {data}")
+    except Exception as e:
+        logger.error(f"WebSocket default route error: {str(e)}")
+    finally:
+        logger.info("WebSocket default route connection closed")
         await websocket.close()
 
 if __name__ == "__main__":
