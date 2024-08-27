@@ -1,0 +1,13 @@
+run = "npm start"
+entrypoint = "src/index.js"
+
+[env]
+REACT_APP_EB_URL = "your-elastic-beanstalk-url"
+
+[nix]
+channel = "stable-22_11"
+
+[deployment]
+run = ["sh", "-c", "npm run build"]
+deploymentTarget = "static"
+publicDir = "build"
