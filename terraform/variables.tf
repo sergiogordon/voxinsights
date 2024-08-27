@@ -13,4 +13,14 @@ variable "environment_name" {
   default     = "voxinsights-env"
 }
 
+variable "vpc_id" {
+  description = "The ID of the VPC in which to launch the Elastic Beanstalk environment"
+  type        = string
+}
+
+variable "subnet_ids" {
+  description = "A list of subnet IDs to launch resources in"
+  type        = list(string)
+}
+
 # Add more variables as needed
